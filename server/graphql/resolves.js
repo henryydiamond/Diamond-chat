@@ -84,7 +84,7 @@ const login = async (_, args) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       errors.password = 'password is incorrect';
-      throw new AuthenticationError('password is incorrect', { errors });
+      throw new UserInputError('password is incorrect', { errors });
     }
 
     const token = jwt.sign({ email }, process.env.JWTSECRET, {
