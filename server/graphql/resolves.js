@@ -3,12 +3,25 @@ const bcrypt = require('bcryptjs');
 const { UserInputError, AuthenticationError } = require('apollo-server');
 const jwt = require('jsonwebtoken');
 
-const getUsers = async () => {
+const getUsers = async (_, __, context) => {
   try {
-    const users = await User.find();
+    let user;
+    if (context.req && context.req.headers.authorization) {
+      const token = context.req.headers.authorization.split('Bearer ')[1];
+      jwt.verify(token, process.env.JWTSECRET, (err, decodedToken) => {
+        if (err) {
+          throw new AuthenticationError('Unthenticated');
+        }
+        user = decodedToken;
+        console.log('USER', user);
+      });
+    }
+    const users = await User.find({ email: { $ne: user.email } });
+
     return users;
   } catch (err) {
     console.error(err);
+    throw err;
   }
 };
 
@@ -77,8 +90,13 @@ const login = async (_, args) => {
     const token = jwt.sign({ email }, process.env.JWTSECRET, {
       expiresIn: 60 * 60,
     });
-    user.token = token;
-    return user;
+
+    return {
+      ...user.toJSON(),
+      createdAt: user.createdAt.toISOString(),
+      updatedAt: user.updatedAt.toISOString(),
+      token,
+    };
   } catch (err) {
     console.log(err);
     throw err;

@@ -9,6 +9,8 @@ module.exports = gql`
     username: String!
     email: String!
     token: String
+    createdAt: String!
+    updatedAt: String!
   }
 
   # The "Query" type is special: it lists all of the available queries that
