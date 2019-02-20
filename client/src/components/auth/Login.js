@@ -1,11 +1,12 @@
 import React, { Fragment, useState } from 'react';
-import { Row, Col, Form, Button } from 'react-bootstrap';
+import { Row, Col, Form, Button, Spinner } from 'react-bootstrap';
 import { useLazyQuery, gql } from '@apollo/client';
 import { Link } from 'react-router-dom';
+import { useAuthDispatch } from '../../context/authContext';
 
 const LOGIN_USER = gql`
-  query login($email: String!, $password: String!) {
-    login(email: $email, password: $password) {
+  query login($username: String!, $password: String!) {
+    login(username: $username, password: $password) {
       _id
       username
       email
@@ -16,15 +17,15 @@ const LOGIN_USER = gql`
 `;
 export const Login = (props) => {
   const [values, setValues] = useState({
-    email: '',
+    username: '',
     password: '',
   });
   const [errors, setErrors] = useState({});
-
+  const dispatch = useAuthDispatch();
   const [loginUser, { loading }] = useLazyQuery(LOGIN_USER, {
     onError: (err) => setErrors(err.graphQLErrors[0].extensions.errors),
     onCompleted: (data) => {
-      localStorage.setItem('token', data.login.token);
+      dispatch({ type: 'LOGIN', payload: data.login });
       props.history.push('/');
     },
   });
@@ -34,23 +35,27 @@ export const Login = (props) => {
     loginUser({ variables: values });
   };
 
-  const { email, password } = values;
+  const { username, password } = values;
+
   return (
     <Fragment>
-      <Row className='authform bg-white py-5 justify-content-center'>
+      <Row
+        className='authform bg-white py-5 justify-content-center'
+        style={{ opacity: '70%' }}
+      >
         <Col sm={8} md={6} lg={4}>
           <h1 className='text-center'>Login</h1>
           <Form onSubmit={handleSubmit}>
             <Form.Group>
-              <Form.Label className={errors.email && 'text-danger'}>
-                {errors.email ?? 'Email address'}
+              <Form.Label className={errors.username && 'text-danger'}>
+                {errors.username ?? 'Username'}
               </Form.Label>
               <Form.Control
-                type='email'
-                value={email}
-                className={errors.email && 'is-invalid'}
+                type='text'
+                value={username}
+                className={errors.username && 'is-invalid'}
                 onChange={(e) => {
-                  setValues({ ...values, email: e.target.value });
+                  setValues({ ...values, username: e.target.value });
                 }}
               />
             </Form.Group>

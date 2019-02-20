@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 require('dotenv').config();
 const resolvers = require('./graphql/resolves');
 const typeDefs = require('./graphql/typeDefs');
+const contextMiddleware = require('./utils/contextMiddleware');
 // Resolvers define the technique for fetching the types defined in the
 // schema. This resolver retrieves books from the "books" array above.
 
@@ -23,7 +24,11 @@ const db = async () => {
 // execute database connection
 db();
 
-const server = new ApolloServer({ typeDefs, resolvers, context: (ctx) => ctx });
+const server = new ApolloServer({
+  typeDefs,
+  resolvers,
+  context: contextMiddleware,
+});
 
 // The `listen` method launches a web server.
 server.listen().then(({ url }) => {

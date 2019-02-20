@@ -1,22 +1,27 @@
 const User = require('../models/User');
+const Message = require('../models/Message');
 const bcrypt = require('bcryptjs');
 const { UserInputError, AuthenticationError } = require('apollo-server');
 const jwt = require('jsonwebtoken');
 
-const getUsers = async (_, __, context) => {
+const getUsers = async (_, __, { user }) => {
   try {
-    let user;
-    if (context.req && context.req.headers.authorization) {
-      const token = context.req.headers.authorization.split('Bearer ')[1];
-      jwt.verify(token, process.env.JWTSECRET, (err, decodedToken) => {
-        if (err) {
-          throw new AuthenticationError('Unthenticated');
-        }
-        user = decodedToken;
-        console.log('USER', user);
-      });
-    }
-    const users = await User.find({ email: { $ne: user.email } });
+    if (!user) throw new AuthenticationError('Unauthenticated');
+
+    let users = await User.find({ username: { $ne: user.username } }).select(
+      '-email -password'
+    );
+    const allUserMessages = await Message.find({
+      $or: [{ from: user.username.toString() }, { to: user.username }],
+    }).sort({ createdAt: 'DESC' });
+
+    users = users.map((otherUser) => {
+      const latestMessage = allUserMessages.find(
+        (m) => m.from === otherUser.username || m.to === otherUser.username
+      );
+      otherUser.latestMessage = latestMessage;
+      return otherUser;
+    });
 
     return users;
   } catch (err) {
@@ -39,7 +44,7 @@ const register = async (_, args) => {
       errors.confirmPassword = 'Passwords do not match';
 
     // Making sure user does not exist
-    let user = await User.findOne({ email: email }).exec();
+    let user = await User.findOne({ username: username }).exec();
     if (user) errors.user = 'User already exist';
 
     if (Object.keys(errors).length > 0) {
@@ -66,18 +71,18 @@ const register = async (_, args) => {
 
 const login = async (_, args) => {
   let errors = {};
-  let { email, password } = args;
+  let { username, password } = args;
   try {
-    if (email.trim() === '') errors.email = 'Email must not be empty';
+    if (username.trim() === '') errors.username = 'Email must not be empty';
     if (password.trim() === '') errors.password = 'Password must not be empty';
 
     if (Object.keys(errors).length > 0) {
       throw new UserInputError('Bad Input', { errors });
     }
-    const user = await User.findOne({ email: email }).exec();
+    const user = await User.findOne({ username: username }).exec();
 
     if (!user) {
-      errors.email = 'User does not exist';
+      errors.username = 'User does not exist';
       throw new UserInputError('User does not exist', { errors });
     }
 
@@ -87,7 +92,7 @@ const login = async (_, args) => {
       throw new UserInputError('password is incorrect', { errors });
     }
 
-    const token = jwt.sign({ email }, process.env.JWTSECRET, {
+    const token = jwt.sign({ username }, process.env.JWTSECRET, {
       expiresIn: 60 * 60,
     });
 
@@ -102,13 +107,67 @@ const login = async (_, args) => {
     throw err;
   }
 };
+const sendMessage = async (_, args, { user }) => {
+  try {
+    if (!user) throw new AuthenticationError('Unauthenticated');
+    const recipient = await User.findOne({ username: args.to }).exec();
+    if (!recipient) {
+      throw new UserInputError('User not found');
+    } else if (recipient.username === user.username) {
+      throw new UserInputError(
+        'Unauthorized action, You cant message your self'
+      );
+    }
+
+    if (args.content.trim() === '') {
+      throw new UserInputError('Message is empty');
+    }
+
+    let message = new Message({
+      ...args,
+      from: user.username,
+    });
+
+    await message.save();
+
+    return {
+      ...message.toJSON(),
+      createdAt: message.createdAt.toISOString(),
+    };
+  } catch (err) {
+    console.log(err);
+    throw err;
+  }
+};
+
+const getMessages = async (_, args, { user }) => {
+  try {
+    if (!user) throw new AuthenticationError('Unauthenticated');
+
+    const otherUser = await User.findOne({ username: args.from }).exec();
+
+    if (!otherUser) throw new UserInputError('User  not find');
+    const userNames = [user.username, otherUser.username];
+    const messages = await Message.find({
+      $and: [{ from: userNames }, { to: userNames }],
+    })
+      .sort({ createdAt: -1 })
+      .exec();
+    return messages;
+  } catch (err) {
+    console.log(err);
+    throw err;
+  }
+};
 
 module.exports = {
   Query: {
     getUsers,
     login,
+    getMessages,
   },
   Mutation: {
     register,
+    sendMessage,
   },
 };

@@ -43,18 +43,15 @@ export const Register = (props) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     registerUser({ variables: values });
-    setValues({
-      email: '',
-      username: '',
-      password: '',
-      confirmPassword: '',
-    });
   };
 
   const { email, username, password, confirmPassword } = values;
   return (
     <Fragment>
-      <Row className='authform bg-white py-5 justify-content-center'>
+      <Row
+        className='authform bg-white py-5 justify-content-center'
+        style={{ opacity: '70%' }}
+      >
         <Col sm={8} md={6} lg={4}>
           <h1 className='text-center'>Register</h1>
           <Form onSubmit={handleSubmit}>

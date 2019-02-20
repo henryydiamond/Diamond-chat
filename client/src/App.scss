@@ -1,16 +1,13 @@
 $green: #343090;
 $blue: #d6d6ea;
 $border-radius: 0;
+$paragraph-margin-bottom: 0;
 @import '~bootstrap/scss/bootstrap';
 
 body {
   min-height: 100vh;
-  background-image: linear-gradient(
-    to right bottom,
-    #44c2fd,
-    #00b1ff,
-    #119dff,
-    #5783ff,
-    #8c61ff
-  );
+  background-color: #4158d0;
+
+  background-image: url('https://www.transparenttextures.com/patterns/food.png');
+  overflow: hidden;
 }
