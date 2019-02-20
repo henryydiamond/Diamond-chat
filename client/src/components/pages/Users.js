@@ -1,6 +1,11 @@
 import React from 'react';
 import { gql, useQuery } from '@apollo/client';
 import { Col, Spinner, Alert, Image } from 'react-bootstrap';
+import classNames from 'classnames';
+import {
+  useMessageDispatch,
+  useMessageState,
+} from '../../context/messageContext';
 
 const GET_USERS = gql`
   query getUsers {
@@ -9,59 +14,69 @@ const GET_USERS = gql`
       createdAt
       imageUrl
       latestMessage {
+        _id
         from
         to
         content
+        createdAt
       }
     }
   }
 `;
 
-const Users = ({ setSelectedUser }) => {
-  const { loading, data, error } = useQuery(GET_USERS);
+const Users = () => {
+  const dispatch = useMessageDispatch();
+  const { users } = useMessageState();
+  const selectedUser = users?.find((u) => u.selected === true)?.username;
+
+  const { loading } = useQuery(GET_USERS, {
+    onCompleted: (data) =>
+      dispatch({ type: 'SET_USERS', payload: data.getUsers }),
+    onError: (err) => console.log(err),
+  });
+
   let usersMarkup;
-  if (!data && loading) {
+  if (!users && loading) {
     usersMarkup = <Spinner animation='grow' />;
-  } else if (data.getUsers.length === 0) {
+  } else if (users && users.length === 0) {
     usersMarkup = (
       <Alert variant='info'>No users have joined this platform yet</Alert>
     );
-  } else if (data.getUsers.length > 0) {
-    usersMarkup = data.getUsers.map((user) => (
-      <div
-        className='d-flex p-3'
-        key={user._id}
-        onClick={() => setSelectedUser(user.username)}
-      >
-        <Image
-          src='https://source.unsplash.com/user/erondu/1600x900'
-          roundedCircle
-          className='mr-2'
-          style={{ width: 50, height: 50, objectFit: 'cover' }}
-        />
-        <div>
-          <p className='text-success'>{user.username}</p>
-          <p className='font-weight-light'>
-            {user.latestMessage
-              ? user.latestMessage.content
-              : 'You are connected'}
-          </p>
+  } else if (users && users.length > 0) {
+    usersMarkup = users.map((user) => {
+      const selected = selectedUser === user.username;
+      return (
+        <div
+          role='button'
+          className={classNames(
+            'user-div d-flex justify-content-center justify-content-md-start p-3',
+            {
+              'bg-white': selected,
+            }
+          )}
+          key={user._id}
+          onClick={() =>
+            dispatch({ type: 'SET_SELECTED_USER', payload: user.username })
+          }
+        >
+          <Image
+            src='https://source.unsplash.com/user/erondu/1600x900'
+            className='user-image '
+          />
+          <div className='d-none d-md-block ml-2'>
+            <p className='text-success'>{user.username}</p>
+            <p className='font-weight-light'>
+              {user.latestMessage
+                ? user.latestMessage.content
+                : 'You are connected'}
+            </p>
+          </div>
         </div>
-      </div>
-    ));
+      );
+    });
   }
   return (
-    <Col
-      className=' p-0'
-      xs={4}
-      style={{
-        backgroundColor: ' #8EC5FC',
-        opacity: '85%',
-
-        backgroundImage:
-          'linear-gradient(62deg, #8EC5FC 0%, #ffffff 49%, #E0C3FC 98%)',
-      }}
-    >
+    <Col className=' p-0' xs={2} md={4} style={{ backgroundColor: '#F2F3F4' }}>
       {usersMarkup}
     </Col>
   );

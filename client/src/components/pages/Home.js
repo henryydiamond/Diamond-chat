@@ -1,4 +1,4 @@
-import React, { useState, Fragment } from 'react';
+import React, { Fragment } from 'react';
 import { Row, Navbar, Nav } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import { useAuthDispatch } from '../../context/authContext';
@@ -7,11 +7,10 @@ import Messages from './Messages';
 
 const Home = ({ history }) => {
   const dispatch = useAuthDispatch();
-  const [selectedUser, setSelectedUser] = useState(null);
 
   const logout = () => {
     dispatch({ type: 'LOGOUT' });
-    history.push('/login');
+    window.location.href = '/login';
   };
 
   return (
@@ -26,9 +25,9 @@ const Home = ({ history }) => {
           </Nav>
         </Navbar.Collapse>
       </Navbar>
-      <Row className=' m-0'>
-        <Users setSelectedUser={setSelectedUser} />
-        <Messages selectedUser={selectedUser} />
+      <Row className='m-0 bg-white'>
+        <Users />
+        <Messages />
       </Row>
     </Fragment>
   );
