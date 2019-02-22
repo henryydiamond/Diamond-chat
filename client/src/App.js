@@ -19,7 +19,7 @@ import { MessageProvider } from './context/messageContext';
 import DynamicRoutes from './DynamicRoutes';
 
 let httpLink = createHttpLink({
-  uri: 'http://localhost:4000',
+  uri: process.env.REACT_APP_GQL_ENDPOINT,
 });
 
 const authLink = setContext((_, { headers }) => {
@@ -35,7 +35,7 @@ const authLink = setContext((_, { headers }) => {
 });
 httpLink = authLink.concat(httpLink);
 const wsLink = new WebSocketLink({
-  uri: 'ws://localhost:4000/graphql',
+  uri: process.env.REACT_APP_GQL_WS_ENDPOINT,
   options: {
     reconnect: true,
     connectionParams: {

@@ -1,7 +1,7 @@
 const { ApolloServer } = require('apollo-server');
 const mongoose = require('mongoose');
 require('dotenv').config();
-const resolvers = require('./graphql/resolves');
+const resolvers = require('./graphql/resolvers');
 const typeDefs = require('./graphql/typeDefs');
 const contextMiddleware = require('./utils/contextMiddleware');
 // Resolvers define the technique for fetching the types defined in the
@@ -9,7 +9,7 @@ const contextMiddleware = require('./utils/contextMiddleware');
 
 const db = async () => {
   try {
-    await mongoose.connect(process.env.DATABASELOCAL, {
+    await mongoose.connect(process.env.MONGODBURI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
       useCreateIndex: true,
