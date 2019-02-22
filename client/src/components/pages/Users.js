@@ -60,7 +60,7 @@ const Users = () => {
           }
         >
           <Image
-            src='https://source.unsplash.com/user/erondu/1600x900'
+            src='https://cdn.pixabay.com/photo/2021/05/02/07/56/child-6222810_1280.png'
             className='user-image '
           />
           <div className='d-none d-md-block ml-2'>
@@ -76,7 +76,7 @@ const Users = () => {
     });
   }
   return (
-    <Col className=' p-0' xs={2} md={4} style={{ backgroundColor: '#F2F3F4' }}>
+    <Col className='bg-primary p-0' xs={2} md={4}>
       {usersMarkup}
     </Col>
   );

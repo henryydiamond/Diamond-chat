@@ -1,7 +1,11 @@
 const User = require('../models/User');
 const Message = require('../models/Message');
 const bcrypt = require('bcryptjs');
-const { UserInputError, AuthenticationError } = require('apollo-server');
+const {
+  UserInputError,
+  AuthenticationError,
+  withFilter,
+} = require('apollo-server');
 const jwt = require('jsonwebtoken');
 
 const getUsers = async (_, __, { user }) => {
@@ -107,7 +111,7 @@ const login = async (_, args) => {
     throw err;
   }
 };
-const sendMessage = async (_, args, { user }) => {
+const sendMessage = async (_, args, { user, pubsub }) => {
   try {
     if (!user) throw new AuthenticationError('Unauthenticated');
     const recipient = await User.findOne({ username: args.to }).exec();
@@ -129,7 +133,7 @@ const sendMessage = async (_, args, { user }) => {
     });
 
     await message.save();
-
+    pubsub.publish('NEW_MESSAGE', { newMessage: message });
     return {
       ...message.toJSON(),
       createdAt: message.createdAt.toISOString(),
@@ -169,5 +173,24 @@ module.exports = {
   Mutation: {
     register,
     sendMessage,
+  },
+  Subscription: {
+    newMessage: {
+      subscribe: withFilter(
+        (_, __, { pubsub, user }) => {
+          if (!user) throw new AuthenticationError('Unauthorised');
+          return pubsub.asyncIterator(['NEW_MESSAGE']);
+        },
+        ({ newMessage }, _, { user }) => {
+          if (
+            newMessage.from === user.username ||
+            newMessage.to === user.username
+          ) {
+            return true;
+          }
+          return false;
+        }
+      ),
+    },
   },
 };
